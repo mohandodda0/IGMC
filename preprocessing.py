@@ -189,9 +189,9 @@ def create_trainvaltest_split(dataset, seed=1234, testing=False, datasplit_path=
     print('---------------------------', ratings.shape, u_train_idx.shape, v_train_idx.shape, train_labels.shape)
     print(pairs_nonzero.shape, pairs_nonzero[0])
     # np.hstack((a,v.reshape(-1,1)))
-    df = pd.DataFrame(np.hstack((pairs_nonzero, ratings.reshape(-1,1))).astype(int), columns=['user', 'book', 'rating'])
-    print(df.head())
-    df.to_csv('/Users/mohandodda/ratingsout.csv')
+    # df = pd.DataFrame(np.hstack((pairs_nonzero, ratings.reshape(-1,1))).astype(int), columns=['user', 'book', 'rating'])
+    # print(df.head())
+    # df.to_csv('/Users/mohandodda/ratingsout.csv')
 
 
     # make training adjacency matrix
