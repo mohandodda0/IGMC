@@ -214,6 +214,49 @@ def load_data(fname, seed=1234, verbose=True):
 
         u_features = sp.csr_matrix(u_features)
         v_features = sp.csr_matrix(v_features)
+        num_feats = 0
+
+
+    elif fname == 'goodreads':
+
+        # Check if files exist and download otherwise
+        # files = ['/ratings.dat', '/movies.dat', '/users.dat']
+        # download_dataset(fname, files, data_dir)
+
+        # sep = r'\:\:'
+        # filename = data_dir + files[0]
+        filename = data_dir + '/ratings.csv'
+
+        dtypes = {
+            'u_nodes': np.int64, 'v_nodes': np.int64,
+            'ratings': np.float32}
+
+        # use engine='python' to ignore warning about switching to python backend when using regexp for sep
+        
+        data = pd.read_csv(filename, header=None,
+                           names=['u_nodes', 'v_nodes', 'ratings'], converters=dtypes, engine='python')
+
+        # shuffle here like cf-nade paper with python's own random class
+        # make sure to convert to list, otherwise random.shuffle acts weird on it without a warning
+        data_array = data.values.tolist()
+        random.seed(seed)
+        random.shuffle(data_array)
+        data_array = np.array(data_array)
+
+        u_nodes_ratings = data_array[:, 0].astype(dtypes['u_nodes'])
+        v_nodes_ratings = data_array[:, 1].astype(dtypes['v_nodes'])
+        ratings = data_array[:, 2].astype(dtypes['ratings'])
+
+        u_nodes_ratings, u_dict, num_users = map_data(u_nodes_ratings)
+        v_nodes_ratings, v_dict, num_items = map_data(v_nodes_ratings)
+
+        u_nodes_ratings, v_nodes_ratings = u_nodes_ratings.astype(np.int64), v_nodes_ratings.astype(np.int64)
+        ratings = ratings.astype(np.float32)
+
+        u_features = None
+        v_features = None
+
+
 
     elif fname == 'ml_1m':
 
@@ -254,7 +297,7 @@ def load_data(fname, seed=1234, verbose=True):
 
         movies_headers = ['movie_id', 'title', 'genre']
         movies_df = pd.read_csv(movies_file, sep=sep, header=None,
-                                names=movies_headers, engine='python')
+                                names=movies_headers, engine='python', encoding='latin-1')
 
         # Extracting all genres
         genres = []

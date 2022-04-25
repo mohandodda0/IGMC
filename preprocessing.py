@@ -186,6 +186,14 @@ def create_trainvaltest_split(dataset, seed=1234, testing=False, datasplit_path=
 
     class_values = np.sort(np.unique(ratings))
 
+    print('---------------------------', ratings.shape, u_train_idx.shape, v_train_idx.shape, train_labels.shape)
+    print(pairs_nonzero.shape, pairs_nonzero[0])
+    # np.hstack((a,v.reshape(-1,1)))
+    df = pd.DataFrame(np.hstack((pairs_nonzero, ratings.reshape(-1,1))).astype(int), columns=['user', 'book', 'rating'])
+    print(df.head())
+    df.to_csv('/Users/mohandodda/ratingsout.csv')
+
+
     # make training adjacency matrix
     if post_rating_map is None:
         data = train_labels + 1.
@@ -232,6 +240,7 @@ def load_data_monti(dataset, testing=False, rating_map=None, post_rating_map=Non
         Wcol = load_matlab_file(path_dataset, 'W_tracks')
         u_features = np.eye(num_users)
         v_features = Wcol
+        
 
     u_nodes_ratings = np.where(M)[0]
     v_nodes_ratings = np.where(M)[1]
@@ -479,7 +488,7 @@ def load_official_trainvaltest_split(dataset, testing=False, rating_map=None, po
                          'Film-Noir', 'Horror', 'Musical', 'Mystery', 'Romance', 'Sci-Fi',
                          'Thriller', 'War', 'Western']
         movie_df = pd.read_csv(movie_file, sep=sep, header=None,
-                               names=movie_headers, engine='python')
+                               names=movie_headers, engine='python', encoding='latin-1')
 
         genre_headers = movie_df.columns.values[6:]
         num_genres = genre_headers.shape[0]
@@ -573,7 +582,16 @@ def load_official_trainvaltest_split(dataset, testing=False, rating_map=None, po
             if u_id in u_dict.keys():
                 for k, header in enumerate(cols):
                     u_features[u_dict[u_id], feat_dicts[k][row[header]]] = 1.
+
+
+    elif dataset == 'goodreads':
+        u_features = None
+        v_features= None
+
+
+    
     else:
+
         raise ValueError('Invalid dataset option %s' % dataset)
 
     u_features = sp.csr_matrix(u_features)
