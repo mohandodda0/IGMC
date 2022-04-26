@@ -142,6 +142,7 @@ def test_once(test_dataset,
     eval_info = {
         'epoch': epoch_info,
         'train_loss': 0,
+        'test_rmse': score,
         'test_score': score,
         'evaluation_metric': evalmethod
         }

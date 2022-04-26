@@ -1,0 +1,142 @@
+
+from preprocessing import *
+from models import *
+from train_eval import *
+
+
+data_name = 'ml_1m_stratified'
+
+ratio = 0
+rating_map = None
+post_rating_map = None
+adj_dropout = 0
+max_nodes_per_hop = 100
+data_appendix ="_mnph10"
+
+datasplit_path = (
+            'raw_data/' + data_name + '/split_seed' + str(1234) + 
+            '.pickle'
+        )
+
+if data_name in ['flixster', 'douban', 'yahoo_music']:
+    (
+        u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,
+        val_labels, val_u_indices, val_v_indices, test_labels, test_u_indices, 
+        test_v_indices, class_values
+    ) = load_data_monti(data_name, True, rating_map, post_rating_map)
+elif data_name == 'ml_100k':
+    print("Using official MovieLens split u1.base/u1.test with 20% validation...")
+    (
+        u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,
+        val_labels, val_u_indices, val_v_indices, test_labels, test_u_indices, 
+        test_v_indices, class_values
+    ) = load_official_trainvaltest_split(
+        data_name, True, rating_map, post_rating_map, 1.0
+    )
+elif data_name == "ml_1m_stratified" or  data_name == "goodreads_stratified":
+    print("loading from file without features")
+    (
+        u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,
+        val_labels, val_u_indices, val_v_indices, test_labels, test_u_indices, 
+        test_v_indices, class_values
+    ) = load_from_file(
+        data_name, True, rating_map, post_rating_map, 1.0
+    )
+
+else:
+    (
+        u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,
+        val_labels, val_u_indices, val_v_indices, test_labels, test_u_indices, 
+        test_v_indices, class_values
+    ) = create_trainvaltest_split(
+        data_name, 1234, True, datasplit_path, True, True, rating_map, 
+        post_rating_map, 1.0
+    )
+
+# print("loading from file without features")
+
+# (
+#     u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,
+#     val_labels, val_u_indices, val_v_indices, test_labels, test_u_indices, 
+#     test_v_indices, class_values
+# ) = load_from_file(
+#     data_name, True, rating_map, post_rating_map, 1.0
+# )
+
+u_features, v_features = None, None
+n_features = 0
+
+
+train_indices = (train_u_indices, train_v_indices)
+
+test_indices = (test_u_indices, test_v_indices)
+
+train_graphs, val_graphs, test_graphs = None, None, None
+
+data_combo = (data_name, data_appendix, "testmode")
+
+
+# dataset_class = 'MyDynamicDataset' 
+
+dataset_class = 'MyDataset'
+print('++++++++++++++++= start herererer')
+
+evaled = eval(dataset_class)
+print('done here')
+print(evaled)
+
+train_graphs = eval(dataset_class)(
+    'data/{}{}/{}/train'.format(*data_combo),
+    adj_train, 
+    train_indices, 
+    train_labels, 
+    1, 
+    1.0, 
+    max_nodes_per_hop, 
+    u_features, 
+    v_features, 
+    class_values, 
+    max_num=None,
+    parallel=False
+)
+
+
+test_graphs = eval(dataset_class)(
+    'data/{}{}/{}/test'.format(*data_combo),
+    adj_train, 
+    test_indices, 
+    test_labels, 
+    1,
+    1.0,
+    max_nodes_per_hop, 
+    u_features, 
+    v_features, 
+    class_values, 
+    max_num=None,
+    parallel=False
+)
+
+
+num_relations = len(class_values)
+multiply_by = 1
+
+
+
+model = IGMC (
+        train_graphs, 
+        latent_dim=[32, 32, 32, 32], 
+        num_relations=num_relations, 
+        num_bases=4, 
+        regression=True, 
+        adj_dropout=adj_dropout, 
+        force_undirected=False, 
+        side_features=False,
+        n_side_features=n_features, 
+        multiply_by=multiply_by
+    )
+total_params = sum(p.numel() for param in model.parameters() for p in param)
+
+
+print('model loaded')
+
+score = test_once(test_graphs, model, 50, logger=None)
