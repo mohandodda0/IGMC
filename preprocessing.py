@@ -147,6 +147,7 @@ def create_trainvaltest_split(dataset, seed=1234, testing=False, datasplit_path=
             ratings[i] = rating_map[x]
 
     rating_dict = {r: i for i, r in enumerate(np.sort(np.unique(ratings)).tolist())}
+    
 
     # number of test and validation edges
     if dataset == 'ml_25m':
@@ -201,8 +202,9 @@ def create_trainvaltest_split(dataset, seed=1234, testing=False, datasplit_path=
         data = np.array([post_rating_map[r] for r in class_values[train_labels]]) + 1.
     data = data.astype(np.float32)
 
-    # print('---------', num_users, num_items, type(u_train_idx), u_train_idx.shape, u_train_idx, type(v_train_idx),v_train_idx.shape, v_train_idx, type(data),data.shape, data)
-    # print(num_users, num_items, max(u_train_idx), max(v_train_idx))
+    print('---------', num_users, num_items, type(u_train_idx), u_train_idx.shape, u_train_idx, type(v_train_idx),v_train_idx.shape, v_train_idx, type(data),data.shape, data)
+    print(num_users, num_items, max(u_train_idx), max(v_train_idx))
+    print(class_values, type(train_labels), train_labels.shape, max(train_labels), type(train_labels[0]), train_labels)
 
     rating_mx_train = sp.csr_matrix((data, [u_train_idx, v_train_idx]), 
                                     shape=[num_users, num_items], dtype=np.float32)
@@ -646,8 +648,13 @@ def load_from_file(dataset, testing=False, rating_map=None, post_rating_map=None
     # u_test_idx = data_test['u_nodes'].values
     # v_test_idx = data_test['v_nodes'].values
 
-    train_labels = data_train['ratings'].values
-    test_labels = data_test['ratings'].values
+    # train_labels = data_train['ratings'].values
+    # test_labels = data_test['ratings'].values
+
+    ratings = result['ratings'].values
+    if rating_map is not None:
+        for i, x in enumerate(ratings):
+            ratings[i] = rating_map[x]
 
 
     num_train = len(data_train)
@@ -663,6 +670,12 @@ def load_from_file(dataset, testing=False, rating_map=None, post_rating_map=None
     u_test_idx = u_nodes_ratings[num_train:]
     v_test_idx = v_nodes_ratings[num_train:]
 
+
+
+    rating_dict = {r: i for i, r in enumerate(np.sort(np.unique(ratings)).tolist())}
+    all_labels = np.array([rating_dict[r] for r in ratings], dtype=np.int32)
+    train_labels = all_labels[:num_train]
+    val_labels = all_labels[num_train:]
 
 
 
