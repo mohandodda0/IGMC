@@ -186,12 +186,12 @@ def create_trainvaltest_split(dataset, seed=1234, testing=False, datasplit_path=
 
     class_values = np.sort(np.unique(ratings))
 
-    print('---------------------------', ratings.shape, u_train_idx.shape, v_train_idx.shape, train_labels.shape)
-    print(pairs_nonzero.shape, pairs_nonzero[0])
+
     # np.hstack((a,v.reshape(-1,1)))
     # df = pd.DataFrame(np.hstack((pairs_nonzero, ratings.reshape(-1,1))).astype(int), columns=['user', 'book', 'rating'])
     # print(df.head())
     # df.to_csv('/Users/mohandodda/ratingsout.csv')
+
 
 
     # make training adjacency matrix
@@ -200,6 +200,9 @@ def create_trainvaltest_split(dataset, seed=1234, testing=False, datasplit_path=
     else:
         data = np.array([post_rating_map[r] for r in class_values[train_labels]]) + 1.
     data = data.astype(np.float32)
+
+    print('---------', num_users, num_items, type(u_train_idx), u_train_idx.shape, u_train_idx, type(v_train_idx),v_train_idx.shape, v_train_idx, type(data),data.shape, data)
+    print(num_users, num_items, max(u_train_idx), max(v_train_idx))
 
     rating_mx_train = sp.csr_matrix((data, [u_train_idx, v_train_idx]), 
                                     shape=[num_users, num_items], dtype=np.float32)
@@ -263,10 +266,12 @@ def load_data_monti(dataset, testing=False, rating_map=None, post_rating_map=Non
     labels = np.full((num_users, num_items), neutral_rating, dtype=np.int32)
     labels[u_nodes, v_nodes] = np.array([rating_dict[r] for r in ratings])
 
+
     for i in range(len(u_nodes)):
         assert(labels[u_nodes[i], v_nodes[i]] == rating_dict[ratings[i]])
 
     labels = labels.reshape([-1])
+
 
     # number of test and validation edges
 
@@ -635,21 +640,29 @@ def load_from_file(dataset, testing=False, rating_map=None, post_rating_map=None
         names=['u_nodes', 'v_nodes', 'ratings'], dtype=dtypes)
     
 
-    u_train_idx = data_train['u_nodes']
-    v_train_idx = data_train['v_nodes']
+    # u_train_idx = data_train['u_nodes'].values
+    # v_train_idx = data_train['v_nodes'].values
 
-    u_test_idx = data_test['u_nodes']
-    v_test_idx = data_test['v_nodes']
+    # u_test_idx = data_test['u_nodes'].values
+    # v_test_idx = data_test['v_nodes'].values
 
-    train_labels = data_train['ratings']
-    test_labels = data_test['ratings']
+    train_labels = data_train['ratings'].values
+    test_labels = data_test['ratings'].values
 
 
-
+    num_train = len(data_train)
     result = pd.concat([data_train, data_test])
 
-    _, _, num_users = map_data(result['u_nodes'])
-    _, _, num_items = map_data(result['v_nodes'])
+    u_nodes_ratings, _, num_users = map_data(result['u_nodes'].values)
+    v_nodes_ratings, _, num_items = map_data(result['v_nodes'].values)
+
+
+    u_train_idx = u_nodes_ratings[:num_train]
+    v_train_idx = v_nodes_ratings[:num_train]
+
+    u_test_idx = u_nodes_ratings[num_train:]
+    v_test_idx = v_nodes_ratings[num_train:]
+
 
 
 
@@ -666,6 +679,10 @@ def load_from_file(dataset, testing=False, rating_map=None, post_rating_map=None
     else:
         data = np.array([post_rating_map[r] for r in class_values[train_labels]]) + 1.
     data = data.astype(np.float32)
+
+    print(data, u_train_idx, v_train_idx, num_users, num_items)
+    print(num_users, num_items, max(u_train_idx), max(v_train_idx))
+
 
     rating_mx_train = sp.csr_matrix((data, [u_train_idx, v_train_idx]), 
                                     shape=[num_users, num_items], dtype=np.float32)

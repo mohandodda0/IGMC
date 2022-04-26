@@ -29,10 +29,10 @@ warnings.showwarning = warn_with_traceback
 
 
 def logger(info, model, optimizer):
-    epoch, train_loss, test_rmse = info['epoch'], info['train_loss'], info['test_rmse']
+    epoch, train_loss, test_score, evaluation_metric= info['epoch'], info['train_loss'], info['test_score'], info['evaluation_metric']
     with open(os.path.join(args.res_dir, 'log.txt'), 'a') as f:
-        f.write('Epoch {}, train loss {:.4f}, test rmse {:.6f}\n'.format(
-            epoch, train_loss, test_rmse))
+        f.write('Epoch {}, train loss {:.4f}, test rmse {:.6f}, evaluation metric {}\n'.format(
+            epoch, train_loss, test_score, evaluation_metric))
     if type(epoch) == int and epoch % args.save_interval == 0:
         print('Saving model states...')
         model_name = os.path.join(args.res_dir, 'model_checkpoint{}.pth'.format(epoch))
@@ -240,7 +240,6 @@ elif args.data_name == 'ml_100k':
     ) = load_official_trainvaltest_split(
         args.data_name, args.testing, rating_map, post_rating_map, args.ratio
     )
-
 elif args.data_name == "ml_1m_stratified" or  args.data_name == "goodreads_stratified":
     assert args.testing==True
     print("loading from file without features")
@@ -294,9 +293,10 @@ if args.debug:  # use a small number of data to debug
 train_indices = (train_u_indices, train_v_indices)
 val_indices = (val_u_indices, val_v_indices)
 test_indices = (test_u_indices, test_v_indices)
-print('#train: %d, #val: %d, #test: %d' % (
+# print('#train: %d, #val: %d, #test: %d' % (
+print('#train: %d, #test: %d' % (
     len(train_u_indices), 
-    len(val_u_indices), 
+    # len(val_u_indices), 
     len(test_u_indices), 
 ))
 
@@ -345,6 +345,7 @@ test_graphs = eval(dataset_class)(
     class_values, 
     max_num=args.max_test_num
 )
+print(test_graphs)
 if not args.testing:
     dataset_class = 'MyDynamicDataset' if args.dynamic_val else 'MyDataset'
     val_graphs = eval(dataset_class)(
