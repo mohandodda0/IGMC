@@ -588,7 +588,6 @@ def load_official_trainvaltest_split(dataset, testing=False, rating_map=None, po
         u_features = None
         v_features= None
 
-
     
     else:
 
@@ -602,3 +601,210 @@ def load_official_trainvaltest_split(dataset, testing=False, rating_map=None, po
 
     return u_features, v_features, rating_mx_train, train_labels, u_train_idx, v_train_idx, \
         val_labels, u_val_idx, v_val_idx, test_labels, u_test_idx, v_test_idx, class_values
+
+
+
+def load_from_file(dataset, testing=False, rating_map=None, post_rating_map=None, ratio=1.0):
+    """
+    Loads official train/test split and uses 10% of training samples for validaiton
+    For each split computes 1-of-num_classes labels. Also computes training
+    adjacency matrix. Assumes flattening happens everywhere in row-major fashion.
+    """
+
+    sep = ','
+
+    # Check if files exist and download otherwise
+    # files = ['/base.csv', '/test.csv', '/item.csv', '/user.csv']
+    # fname = dataset
+    # data_dir = 'raw_data/' + fname
+
+
+    dtypes = {
+        'u_nodes': np.int32, 'v_nodes': np.int32,
+        'ratings': np.float32, 'timestamp': np.float64}
+
+    filename_train = 'raw_data/' + dataset + '/base.csv'
+    filename_test = 'raw_data/' + dataset + '/test.csv'
+
+    data_train = pd.read_csv(
+        filename_train, sep=sep, header=None,
+        names=['u_nodes', 'v_nodes', 'ratings', 'timestamp'], dtype=dtypes)
+
+    data_test = pd.read_csv(
+        filename_test, sep=sep, header=None,
+        names=['u_nodes', 'v_nodes', 'ratings', 'timestamp'], dtype=dtypes)
+    
+
+    u_train_idx = data_train['u_nodes']
+    v_train_idx = data_train['v_nodes']
+
+    u_test_idx = data_test['u_nodes']
+    v_test_idx = data_test['v_nodes']
+
+    train_labels = data_train['ratings']
+    test_labels = data_test['ratings']
+
+
+
+    result = pd.concat([data_train, data_test])
+
+    _, _, num_users = map_data(result['u_nodes'])
+    _, _, num_items = map_data(result['v_nodes'])
+
+
+
+    class_values = np.sort(np.unique(train_labels))
+
+
+
+
+    # make training adjacency matrix
+    u_features = None
+    v_features = None
+    val_labels = None
+    u_val_idx = None
+    v_val_idx = None
+    if post_rating_map is None:
+        data = train_labels + 1.
+    else:
+        data = np.array([post_rating_map[r] for r in class_values[train_labels]]) + 1.
+    data = data.astype(np.float32)
+
+    rating_mx_train = sp.csr_matrix((data, [u_train_idx, v_train_idx]), 
+                                    shape=[num_users, num_items], dtype=np.float32)
+
+    return u_features, v_features, rating_mx_train, train_labels, u_train_idx, v_train_idx, \
+        val_labels, u_val_idx, v_val_idx, test_labels, u_test_idx, v_test_idx, class_values
+
+
+
+#     data_array_train = data_train.values.tolist()
+#     data_array_train = np.array(data_array_train)
+#     data_array_test = data_test.values.tolist()
+#     data_array_test = np.array(data_array_test)
+
+#     if ratio < 1.0:
+#         data_array_train = data_array_train[data_array_train[:, -1].argsort()[:int(ratio*len(data_array_train))]]
+
+#     # data_array = np.concatenate([data_array_train, data_array_test], axis=0)
+
+#     u_nodes_ratings_train = data_array_train[:, 0].astype(dtypes['u_nodes'])
+#     v_nodes_ratings_train = data_array_train[:, 1].astype(dtypes['v_nodes'])
+#     ratings_train = data_array_train[:, 2].astype(dtypes['ratings'])
+
+#     u_nodes_ratings_test = data_array_test[:, 0].astype(dtypes['u_nodes'])
+#     v_nodes_ratings_test = data_array_test[:, 1].astype(dtypes['v_nodes'])
+#     ratings_test = data_array_test[:, 2].astype(dtypes['ratings'])
+
+#     if rating_map is not None:
+#         for i, x in enumerate(ratings_train):
+#             ratings_train[i] = rating_map[x]
+        
+#         for i, x in enumerate(ratings_test):
+#             ratings_test[i] = rating_map[x]
+
+#     u_nodes_ratings_train, u_dict_d, num_users = map_data(u_nodes_ratings_train)
+#     v_nodes_ratings_train, v_dict, num_items = map_data(v_nodes_ratings_train)
+
+#     u_nodes_ratings_test, u_dict, num_users = map_data(u_nodes_ratings_test)
+#     v_nodes_ratings_test, v_dict, num_items = map_data(v_nodes_ratings_test)
+
+#     u_nodes_ratings_train, v_nodes_ratings_train = u_nodes_ratings_train.astype(np.int64), v_nodes_ratings_train.astype(np.int32)
+#     ratings_train = ratings_train.astype(np.float64)
+
+#     u_nodes_ratings_test, v_nodes_ratings_test = u_nodes_ratings_test.astype(np.int64), v_nodes_ratings_test.astype(np.int32)
+#     ratings_test = ratings_test.astype(np.float64)
+
+#     u_nodes_train = u_nodes_ratings_train
+#     v_nodes_train = v_nodes_ratings_train
+
+#     u_nodes_test = u_nodes_ratings_test
+#     v_nodes_test = v_nodes_ratings_test
+
+#     neutral_rating = -1  # int(np.ceil(np.float(num_classes)/2.)) - 1
+
+#     # assumes that ratings_train contains at least one example of every rating type
+#     rating_dict = {r: i for i, r in enumerate(np.sort(np.unique(ratings)).tolist())}
+
+#     labels = np.full((num_users, num_items), neutral_rating, dtype=np.int32)
+#     labels[u_nodes, v_nodes] = np.array([rating_dict[r] for r in ratings])
+
+#     for i in range(len(u_nodes)):
+#         assert(labels[u_nodes[i], v_nodes[i]] == rating_dict[ratings[i]])
+
+#     labels = labels.reshape([-1])
+
+#     # number of test and validation edges, see cf-nade code
+
+#     num_train = data_array_train.shape[0]
+#     num_test = data_array_test.shape[0]
+#     num_val = int(np.ceil(num_train * 0.2))
+#     num_train = num_train - num_val
+
+#     pairs_nonzero = np.array([[u, v] for u, v in zip(u_nodes, v_nodes)])
+#     idx_nonzero = np.array([u * num_items + v for u, v in pairs_nonzero])
+
+#     # for i in range(len(ratings)):
+#     #     assert(labels[idx_nonzero[i]] == rating_dict[ratings[i]])
+
+#     idx_nonzero_train = idx_nonzero[0:num_train+num_val]
+#     idx_nonzero_test = idx_nonzero[num_train+num_val:]
+
+#     pairs_nonzero_train = pairs_nonzero[0:num_train+num_val]
+#     pairs_nonzero_test = pairs_nonzero[num_train+num_val:]
+
+#     # Internally shuffle training set (before splitting off validation set)
+#     # rand_idx = list(range(len(idx_nonzero_train)))
+#     # np.random.seed(42)
+#     # np.random.shuffle(rand_idx)
+#     idx_nonzero_train = idx_nonzero_train[rand_idx]
+#     pairs_nonzero_train = pairs_nonzero_train[rand_idx]
+
+#     idx_nonzero = np.concatenate([idx_nonzero_train, idx_nonzero_test], axis=0)
+#     pairs_nonzero = np.concatenate([pairs_nonzero_train, pairs_nonzero_test], axis=0)
+
+#     val_idx = idx_nonzero[0:num_val]
+#     train_idx = idx_nonzero[num_val:num_train + num_val]
+#     test_idx = idx_nonzero[num_train + num_val:]
+
+#     assert(len(test_idx) == num_test)
+
+#     val_pairs_idx = pairs_nonzero[0:num_val]
+#     train_pairs_idx = pairs_nonzero[num_val:num_train + num_val]
+#     test_pairs_idx = pairs_nonzero[num_train + num_val:]
+
+#     u_test_idx, v_test_idx = test_pairs_idx.transpose()
+#     u_val_idx, v_val_idx = val_pairs_idx.transpose()
+#     u_train_idx, v_train_idx = train_pairs_idx.transpose()
+
+#     # create labels
+#     train_labels = labels[train_idx]
+#     val_labels = labels[val_idx]
+#     test_labels = labels[test_idx]
+
+#     if testing:
+#         u_train_idx = np.hstack([u_train_idx, u_val_idx])
+#         v_train_idx = np.hstack([v_train_idx, v_val_idx])
+#         train_labels = np.hstack([train_labels, val_labels])
+#         # for adjacency matrix construction
+#         train_idx = np.hstack([train_idx, val_idx])
+    
+#     class_values = np.sort(np.unique(ratings))
+
+#     # make training adjacency matrix
+#     rating_mx_train = np.zeros(num_users * num_items, dtype=np.float32)
+#     if post_rating_map is None:
+#         rating_mx_train[train_idx] = labels[train_idx].astype(np.float32) + 1.
+#     else:
+#         rating_mx_train[train_idx] = np.array([post_rating_map[r] for r in class_values[labels[train_idx]]]) + 1.
+#     rating_mx_train = sp.csr_matrix(rating_mx_train.reshape(num_users, num_items))
+
+    
+#     u_features = None
+#     v_features= None
+    
+
+
+
+#     return u_features, v_features, rating_mx_train, train_labels, u_train_idx, v_train_idx, \
+#         val_labels, u_val_idx, v_val_idx, test_labels, u_test_idx, v_test_idx, class_values
