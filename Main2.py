@@ -12,7 +12,7 @@ post_rating_map = None
 adj_dropout = 0
 max_nodes_per_hop = 100
 data_appendix ="_mnph10"
-epochs = 40
+epochs = 35
 val_test_appendix = "testmode"
 
 datasplit_path = (
@@ -40,7 +40,8 @@ elif data_name == "ml_1m_stratified" or  data_name == "goodreads_stratified":
     (
         u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,
         val_labels, val_u_indices, val_v_indices, test_labels, test_u_indices, 
-        test_v_indices, class_values,  testtopk_u_indices, testtopk_v_indices
+        test_v_indices, class_values
+        # ,  testtopk_u_indices, testtopk_v_indices
     ) = load_from_file(
         data_name, True, rating_map, post_rating_map, 1.0
     )
@@ -73,7 +74,7 @@ train_indices = (train_u_indices, train_v_indices)
 
 test_indices = (test_u_indices, test_v_indices)
 l = len(test_u_indices)
-testtopk_indices = (testtopk_u_indices, testtopk_v_indices)
+# testtopk_indices = (testtopk_u_indices, testtopk_v_indices)
 
 # testtopk_indices = (testtopk_u_indices[:l], testtopk_v_indices[:l])
 
@@ -147,10 +148,10 @@ test_graphs = eval(dataset_class)(
 #     max_num=None,
 #     parallel=False
 # )
-print(np.random.randint(5, size=len(testtopk_indices)).shape)
-print(len(testtopk_indices[0]))
-# print(len(test_graphs_topk))
-print(len(test_graphs))
+# print(np.random.randint(5, size=len(testtopk_indices)).shape)
+# print(len(testtopk_indices[0]))
+# # print(len(test_graphs_topk))
+# print(len(test_graphs))
 
 num_relations = len(class_values)
 multiply_by = 1
@@ -180,7 +181,7 @@ print('model loaded')
 
 # score = test_once(test_graphs, model, 50, logger=None)
 model_pos = os.path.join(res_dir, 'model_checkpoint{}.pth'.format(epochs))
-# model.load_state_dict(torch.load(model_pos))
+model.load_state_dict(torch.load(model_pos, map_location=torch.device('cpu')))
 score = test_once(test_graphs, model, 50, logger=None, evalmethod='rmse')
 
 # score = test_once(test_graphs_topk, model, 50, logger=None, evalmethod='recall', test_graphs = test_graphs)

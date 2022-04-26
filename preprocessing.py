@@ -674,20 +674,20 @@ def load_from_file(dataset, testing=False, rating_map=None, post_rating_map=None
     u_test_idx = u_nodes_ratings[num_train:]
     v_test_idx = v_nodes_ratings[num_train:]
 
-    from collections import defaultdict
-    uniqueitems = np.unique(u_nodes_ratings)
-    userdict = defaultdict(list)
-    for val in zip(u_train_idx, v_train_idx):
-        userdict[val[0]].append(val[1])
-    outs = []
-    for user in userdict:
-        notin = set(uniqueitems).symmetric_difference(set(userdict[user]))
-        an_array = np.full((len(notin), 2), user)
-        an_array[:,1] = list(notin)
-        outs.append(an_array)
-    out = np.vstack(outs)
-    u_testtopk_idx = out[:,0]
-    v_testtopk_idx = out[:,1]
+    # from collections import defaultdict
+    # uniqueitems = np.unique(u_nodes_ratings)
+    # userdict = defaultdict(list)
+    # for val in zip(u_train_idx, v_train_idx):
+    #     userdict[val[0]].append(val[1])
+    # outs = []
+    # for user in userdict:
+    #     notin = set(uniqueitems).symmetric_difference(set(userdict[user]))
+    #     an_array = np.full((len(notin), 2), user)
+    #     an_array[:,1] = list(notin)
+    #     outs.append(an_array)
+    # out = np.vstack(outs)
+    # u_testtopk_idx = out[:,0]
+    # v_testtopk_idx = out[:,1]
     
 
 
@@ -722,7 +722,8 @@ def load_from_file(dataset, testing=False, rating_map=None, post_rating_map=None
                                     shape=[num_users, num_items], dtype=np.float32)
 
     return u_features, v_features, rating_mx_train, train_labels, u_train_idx, v_train_idx, \
-        val_labels, u_val_idx, v_val_idx, test_labels, u_test_idx, v_test_idx, class_values , u_testtopk_idx, v_testtopk_idx
+        val_labels, u_val_idx, v_val_idx, test_labels, u_test_idx, v_test_idx, class_values 
+        # , u_testtopk_idx, v_testtopk_idx
 
 
 

@@ -40,7 +40,8 @@ elif data_name == "ml_1m_stratified" or  data_name == "goodreads_stratified":
     (
         u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,
         val_labels, val_u_indices, val_v_indices, test_labels, test_u_indices, 
-        test_v_indices, class_values,  testtopk_u_indices, testtopk_v_indices
+        test_v_indices, class_values
+        # ,  testtopk_u_indices, testtopk_v_indices
     ) = load_from_file(
         data_name, True, rating_map, post_rating_map, 1.0
     )
@@ -64,7 +65,7 @@ else:
 # ) = load_from_file(
 #     data_name, True, rating_map, post_rating_map, 1.0
 # )
-
+print('done loading!')
 u_features, v_features = None, None
 n_features = 0
 
@@ -73,7 +74,7 @@ train_indices = (train_u_indices, train_v_indices)
 
 test_indices = (test_u_indices, test_v_indices)
 l = len(test_u_indices)
-testtopk_indices = (testtopk_u_indices, testtopk_v_indices)
+# testtopk_indices = (testtopk_u_indices, testtopk_v_indices)
 
 # testtopk_indices = (testtopk_u_indices[:l], testtopk_v_indices[:l])
 
@@ -93,11 +94,8 @@ res_dir = os.path.join(
 # dataset_class = 'MyDynamicDataset' 
 
 dataset_class = 'MyDataset'
-print('++++++++++++++++= start herererer')
 
-evaled = eval(dataset_class)
-print('done here')
-print(evaled)
+
 
 # train_graphs = eval(dataset_class)(
 #     'data/{}{}/{}/train'.format(*data_combo),
@@ -129,7 +127,7 @@ test_graphs = eval(dataset_class)(
     max_num=None,
     parallel=False
 )
-
+print('done generating test graphs')
 
 # test_graphs_topk = eval(dataset_class)(
 #     'data/{}{}/{}/testtopk'.format(*data_combo),
@@ -147,10 +145,10 @@ test_graphs = eval(dataset_class)(
 #     max_num=None,
 #     parallel=False
 # )
-print(np.random.randint(5, size=len(testtopk_indices)).shape)
-print(len(testtopk_indices[0]))
+# print(np.random.randint(5, size=len(testtopk_indices)).shape)
+# print(len(testtopk_indices[0]))
 # print(len(test_graphs_topk))
-print(len(test_graphs))
+# print(len(test_graphs))
 
 num_relations = len(class_values)
 multiply_by = 1
