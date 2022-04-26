@@ -621,18 +621,18 @@ def load_from_file(dataset, testing=False, rating_map=None, post_rating_map=None
 
     dtypes = {
         'u_nodes': np.int32, 'v_nodes': np.int32,
-        'ratings': np.float32, 'timestamp': np.float64}
+        'ratings': np.float32}
 
-    filename_train = 'raw_data/' + dataset + '/base.csv'
+    filename_train = 'raw_data/' + dataset + '/train.csv'
     filename_test = 'raw_data/' + dataset + '/test.csv'
 
     data_train = pd.read_csv(
         filename_train, sep=sep, header=None,
-        names=['u_nodes', 'v_nodes', 'ratings', 'timestamp'], dtype=dtypes)
+        names=['u_nodes', 'v_nodes', 'ratings'], dtype=dtypes)
 
     data_test = pd.read_csv(
         filename_test, sep=sep, header=None,
-        names=['u_nodes', 'v_nodes', 'ratings', 'timestamp'], dtype=dtypes)
+        names=['u_nodes', 'v_nodes', 'ratings'], dtype=dtypes)
     
 
     u_train_idx = data_train['u_nodes']
@@ -653,10 +653,7 @@ def load_from_file(dataset, testing=False, rating_map=None, post_rating_map=None
 
 
 
-    class_values = np.sort(np.unique(train_labels))
-
-
-
+    class_values = np.sort(np.unique(result['ratings']))
 
     # make training adjacency matrix
     u_features = None
