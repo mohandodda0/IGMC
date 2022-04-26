@@ -201,13 +201,19 @@ class IGMC(GNN):
             x = torch.tanh(conv(x, edge_index, edge_type))
             concat_states.append(x)
         concat_states = torch.cat(concat_states, 1)
+        # print('herere', concat_states.shape)
 
         users = data.x[:, 0] == 1
         items = data.x[:, 1] == 1
+        # print(data.x[:, 0], data.x[:, 1])
+        # print('first', data.x.shape, users.shape, items.shape)
+        # print(users.sum(), items.sum())
+        # print(concat_states[users].shape,  concat_states[items].shape)
         x = torch.cat([concat_states[users], concat_states[items]], 1)
+        # print('second', x.shape, concat_states.shape)
         if self.side_features:
             x = torch.cat([x, data.u_feature, data.v_feature], 1)
-
+        # print(users.shape)
         x = F.relu(self.lin1(x))
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.lin2(x)
