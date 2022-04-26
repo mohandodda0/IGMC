@@ -412,7 +412,7 @@ else:
     )
     total_params = sum(p.numel() for param in model.parameters() for p in param)
     print(f'Total number of parameters is {total_params}')
-    print('+++++++++++++++++++--------------- MODEL INITIALIZED')
+
     
 
 if not args.no_train:
@@ -483,11 +483,13 @@ else:
             rmse = test_once(test_graphs, model, args.batch_size, logger=None)
             epoch_info = 'transfer {}, epoch {}'.format(args.transfer, args.epoch)
         else:
-            # model.load_state_dict(torch.load(args.model_pos))
-            print('----------------------------------------------------------reached hererererererer')
-            # score = test_once(test_graphs, model, args.batch_size, logger=None, evalmethod='recall')
+            model.load_state_dict(torch.load(args.model_pos))
+            score = test_once(test_graphs, model, args.batch_size, logger=None, evalmethod='recall')
+            print('recalls score', str(score))
+            score = test_once(test_graphs, model, args.batch_size, logger=None, evalmethod='ndcg')
+            print('ndcg score', str(score))
             score = test_once(test_graphs, model, args.batch_size, logger=None)
-            epoch_info = 'transfer {}, epoch {}'.format(args.res_dir, args.epoch)
+            epoch_info = 'test {}, epoch {}'.format(args.res_dir, args.epoch)
         print('Test score is: {:.6f}'.format(rmse))
 
     eval_info = {

@@ -12,6 +12,8 @@ post_rating_map = None
 adj_dropout = 0
 max_nodes_per_hop = 100
 data_appendix ="_mnph10"
+epochs = 40
+val_test_appendix = "testmode"
 
 datasplit_path = (
             'raw_data/' + data_name + '/split_seed' + str(1234) + 
@@ -78,8 +80,14 @@ test_indices = (test_u_indices, test_v_indices)
 
 train_graphs, val_graphs, test_graphs = None, None, None
 
-data_combo = (data_name, data_appendix, "testmode")
+data_combo = (data_name, data_appendix, val_test_appendix)
+file_dir = os.path.dirname(os.path.realpath('__file__'))
 
+res_dir = os.path.join(
+    file_dir, 'results/{}{}_{}'.format(
+        data_name, '', val_test_appendix
+    )
+)
 
 # dataset_class = 'MyDynamicDataset' 
 
@@ -162,7 +170,8 @@ total_params = sum(p.numel() for param in model.parameters() for p in param)
 print('model loaded')
 
 # score = test_once(test_graphs, model, 50, logger=None)
-
+model_pos = os.path.join(res_dir, 'model_checkpoint{}.pth'.format(epochs))
+model.load_state_dict(torch.load(model_pos))
 score = test_once(test_graphs, model, 50, logger=None, evalmethod='recall')
 print(score)
 score = test_once(test_graphs, model, 50, logger=None, evalmethod='ndcg')
