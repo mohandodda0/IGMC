@@ -241,7 +241,8 @@ elif args.data_name == 'ml_100k':
         args.data_name, args.testing, rating_map, post_rating_map, args.ratio
     )
 
-elif args.data_name == "ml_1m_stratified":
+elif args.data_name == "ml_1m_stratified" or  args.data_name == "goodreads_stratified":
+    assert args.testing==True
     print("loading from file without features")
     (
         u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,
@@ -480,6 +481,10 @@ else:
             model.load_state_dict(torch.load(args.model_pos))
             rmse = test_once(test_graphs, model, args.batch_size, logger=None)
             epoch_info = 'transfer {}, epoch {}'.format(args.transfer, args.epoch)
+        else:
+            model.load_state_dict(torch.load(args.model_pos))
+            rmse = test_once(test_graphs, model, args.batch_size, logger=None)
+            epoch_info = 'transfer {}, epoch {}'.format(args.res_dir, args.epoch)
         print('Test rmse is: {:.6f}'.format(rmse))
 
     eval_info = {
