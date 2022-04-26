@@ -16,6 +16,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from util_functions import PyGGraph_to_nx
+import pandas as pd
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -116,27 +117,42 @@ def test_once(test_dataset,
               batch_size,
               logger=None, 
               ensemble=False, 
-              checkpoints=None):
+              checkpoints=None,
+              evalmethod='rmse'):
+
 
     test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
     model.to(device)
     t_start = time.perf_counter()
-    if ensemble and checkpoints:
-        rmse = eval_rmse_ensemble(model, checkpoints, test_loader, device, show_progress=True)
-    else:
-        rmse = eval_rmse(model, test_loader, device, show_progress=True)
+    if evalmethod=='rmse':
+        if ensemble and checkpoints:
+            score = eval_rmse_ensemble(model, checkpoints, test_loader, device, show_progress=True)
+        else:
+            score = eval_rmse(model, test_loader, device, test_dataset=test_dataset, show_progress=True)
+    elif evalmethod == 'recall':
+        # if ensemble and checkpoints:
+        #     score = eval_recall_ensemble(model, checkpoints, test_dataset, device, show_progress=True)
+        # else:
+        #     score = eval_recall(model, test_dataset, device, show_progress=True)
+        score = eval_recall(model, test_loader, device, test_dataset, show_progress=True)
     t_end = time.perf_counter()
     duration = t_end - t_start
-    print('Test Once RMSE: {:.6f}, Duration: {:.6f}'.format(rmse, duration))
+    print('Test Once evaluation: {:.6f}, Duration: {:.6f}'.format(score, duration))
     epoch_info = 'test_once' if not ensemble else 'ensemble'
     eval_info = {
         'epoch': epoch_info,
         'train_loss': 0,
-        'test_rmse': rmse,
+        'test_score': score,
+        'evaluation_metric': evalmethod
         }
     if logger is not None:
         logger(eval_info, None, None)
-    return rmse
+    return score
+
+
+
+
+
 
 
 def num_graphs(data):
@@ -178,8 +194,45 @@ def train(model, optimizer, loader, device, regression=False, ARR=0,
         torch.cuda.empty_cache()
     return total_loss / len(loader.dataset)
 
+def eval_recall(model, loader, device,test_dataset=None, show_progress=False):
+    model.eval()
+    labels = test_dataset.labels
+    if show_progress:
+        print('Testing begins...')
+        pbar = tqdm(loader)
+    else:
+        pbar = loader
 
-def eval_loss(model, loader, device, regression=False, show_progress=False):
+    ys = []
+    outs  = []
+    count = 0
+    for data in pbar:
+        data = data.to(device)
+        ys.append(data.y.view(-1))
+        out = model(data)
+        outs.append(out)
+
+        
+    ys = torch.cat(ys, 0)
+    outs = torch.cat(outs, 0)
+    ys = ys.cpu().detach().numpy()
+    outs = outs.cpu().detach().numpy()
+    print(outs.shape)
+    print(test_dataset.links)
+
+    print(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).shape)
+    df = pd.DataFrame(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).T,  columns=['user', 'item', 'actual', 'predicted'])
+    # print(np.mean(df['user'].value_counts()))
+
+    # print(np.all(ys.cpu().detach().numpy().astype(int)==(labels+1)))
+    # print(ys==labels)
+    # print(outs)
+        
+    
+    return 111
+
+
+def eval_loss(model, loader, device, regression=False, test_dataset=None, show_progress=False):
     model.eval()
     loss = 0
     if show_progress:
@@ -187,20 +240,37 @@ def eval_loss(model, loader, device, regression=False, show_progress=False):
         pbar = tqdm(loader)
     else:
         pbar = loader
+    
+    outs = []
+    ys = []
     for data in pbar:
         data = data.to(device)
+        
         with torch.no_grad():
             out = model(data)
+        if test_dataset:
+            outs.append(out)
+            ys.append(data.y.view(-1))
         if regression:
             loss += F.mse_loss(out, data.y.view(-1), reduction='sum').item()
         else:
             loss += F.nll_loss(out, data.y.view(-1), reduction='sum').item()
         torch.cuda.empty_cache()
+    if test_dataset:
+        ys = torch.cat(ys, 0)
+        outs = torch.cat(outs, 0)
+        ys = ys.cpu().detach().numpy()
+        outs = outs.cpu().detach().numpy()
+
+        # print(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).shape)
+        df = pd.DataFrame(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).T,  columns=['user', 'item', 'actual', 'predicted'])
+        df.to_csv('results/'+str(test_dataset)+'.csv', index=False)
+    
     return loss / len(loader.dataset)
 
 
-def eval_rmse(model, loader, device, show_progress=False):
-    mse_loss = eval_loss(model, loader, device, True, show_progress)
+def eval_rmse(model, loader, device, test_dataset=None, show_progress=False):
+    mse_loss = eval_loss(model, loader, device, True, test_dataset,show_progress)
     rmse = math.sqrt(mse_loss)
     return rmse
 
@@ -231,6 +301,7 @@ def eval_loss_ensemble(model, checkpoints, loader, device, regression=False, sho
         outs = torch.cat(outs, 0).view(-1, 1)
         Outs.append(outs)
     Outs = torch.cat(Outs, 1).mean(1)
+    torch.save()
     if regression:
         loss += F.mse_loss(Outs, ys, reduction='sum').item()
     else:
