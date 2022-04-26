@@ -38,7 +38,8 @@ elif data_name == "ml_1m_stratified" or  data_name == "goodreads_stratified":
     (
         u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,
         val_labels, val_u_indices, val_v_indices, test_labels, test_u_indices, 
-        test_v_indices, class_values
+        test_v_indices, class_values,  
+        # testtopk_u_indices, testtopk_v_indices
     ) = load_from_file(
         data_name, True, rating_map, post_rating_map, 1.0
     )
@@ -70,6 +71,10 @@ n_features = 0
 train_indices = (train_u_indices, train_v_indices)
 
 test_indices = (test_u_indices, test_v_indices)
+
+# testtopk_indices = (testtopk_u_indices, testtopk_v_indices)
+
+
 
 train_graphs, val_graphs, test_graphs = None, None, None
 
@@ -117,6 +122,23 @@ test_graphs = eval(dataset_class)(
 )
 
 
+
+# test_graphs_topk = eval(dataset_class)(
+#     'data/{}{}/{}/testtopk'.format(*data_combo),
+#     adj_train, 
+#     testtopk_indices, 
+#     [-1 for i in range(len(testtopk_indices))], 
+#     1,
+#     1.0,
+#     max_nodes_per_hop, 
+#     u_features, 
+#     v_features, 
+#     class_values, 
+#     max_num=None,
+#     parallel=False
+# )
+
+
 num_relations = len(class_values)
 multiply_by = 1
 
@@ -139,4 +161,10 @@ total_params = sum(p.numel() for param in model.parameters() for p in param)
 
 print('model loaded')
 
-score = test_once(test_graphs, model, 50, logger=None)
+# score = test_once(test_graphs, model, 50, logger=None)
+
+score = test_once(test_graphs, model, 50, logger=None, evalmethod='recall')
+print(score)
+score = test_once(test_graphs, model, 50, logger=None, evalmethod='ndcg')
+print(score)
+

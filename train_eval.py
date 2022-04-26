@@ -118,7 +118,9 @@ def test_once(test_dataset,
               logger=None, 
               ensemble=False, 
               checkpoints=None,
-              evalmethod='rmse'):
+              evalmethod='rmse',
+            #   test_graphs = None
+              ):
 
 
     test_loader = DataLoader(test_dataset, batch_size, shuffle=False)
@@ -135,6 +137,8 @@ def test_once(test_dataset,
         # else:
         #     score = eval_recall(model, test_dataset, device, show_progress=True)
         score = eval_recall(model, test_loader, device, test_dataset, show_progress=True)
+    elif evalmethod =='ndcg':
+        score = eval_ndcg(model, test_loader, device, test_dataset, show_progress=True)
     t_end = time.perf_counter()
     duration = t_end - t_start
     print('Test Once evaluation: {:.6f}, Duration: {:.6f}'.format(score, duration))
@@ -195,9 +199,8 @@ def train(model, optimizer, loader, device, regression=False, ARR=0,
         torch.cuda.empty_cache()
     return total_loss / len(loader.dataset)
 
-def eval_recall(model, loader, device,test_dataset=None, show_progress=False):
+def eval_recall(model, loader, device, test_dataset=None, show_progress=False):
     model.eval()
-    labels = test_dataset.labels
     if show_progress:
         print('Testing begins...')
         pbar = tqdm(loader)
@@ -218,19 +221,87 @@ def eval_recall(model, loader, device,test_dataset=None, show_progress=False):
     outs = torch.cat(outs, 0)
     ys = ys.cpu().detach().numpy()
     outs = outs.cpu().detach().numpy()
-    print(outs.shape)
-    print(test_dataset.links)
 
-    print(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).shape)
+    # print(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).shape)
     df = pd.DataFrame(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).T,  columns=['user', 'item', 'actual', 'predicted'])
-    # print(np.mean(df['user'].value_counts()))
+    from collections import defaultdict
+    # top_n = defaultdict(list)
+    # for i, (uid, iid, true_r, est, _) in df.iterrows():
+    #     top_n[uid].append((iid, est))
+    k = 20
+    user_est_true = defaultdict(list)
+    precisions = dict()
+    recalls = dict()
+    for i, (uid, _, true_r, est) in df.iterrows():
+        user_est_true[uid].append((est, true_r))
+    threshold = -2
+    for uid, user_ratings in user_est_true.items():
+        user_ratings.sort(key=lambda x: x[0], reverse=True)
+        n_rel = sum((true_r >= threshold) for (_, true_r) in user_ratings)
 
-    # print(np.all(ys.cpu().detach().numpy().astype(int)==(labels+1)))
-    # print(ys==labels)
-    # print(outs)
+        n_rec_k = sum((est >= threshold) for (est, _) in user_ratings[:k])
+
+        n_rel_and_rec_k = sum(((true_r >= threshold) and (est >= threshold))
+                              for (est, true_r) in user_ratings[:k])
         
+
+        precisions[uid] = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 0
+
+        recalls[uid] = n_rel_and_rec_k / n_rel if n_rel != 0 else 0
+    # print(recalls)
+    return np.array(list(recalls.values())).mean()
+
+
+
+def eval_ndcg(model, loader, device, test_dataset=None, show_progress=False):
+    model.eval()
+    if show_progress:
+        print('Testing begins...')
+        pbar = tqdm(loader)
+    else:
+        pbar = loader
+
+    ys = []
+    outs  = []
+    count = 0
+    for data in pbar:
+        data = data.to(device)
+        ys.append(data.y.view(-1))
+        out = model(data)
+        outs.append(out)
+
+        
+    ys = torch.cat(ys, 0)
+    outs = torch.cat(outs, 0)
+    ys = ys.cpu().detach().numpy()
+    outs = outs.cpu().detach().numpy()
+
+    # print(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).shape)
+    df = pd.DataFrame(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).T,  columns=['user', 'item', 'actual', 'predicted'])
+
+
     
-    return 111
+    from sklearn.metrics import ndcg_score
+    from scipy import sparse
+    
+    # uids = [int(p.uid) for p in surprise_predictions ]
+    # iids = [int(p.iid) for p in surprise_predictions ]
+    # r_uis = [p.r_ui for p in surprise_predictions ]
+    # ests = [p.est for p in surprise_predictions ]
+    
+    # assert(len(uids) == len(iids) == len(r_uis) == len(ests) )    
+    k = 20
+    
+    sparse_preds = sparse.coo_matrix( (df['predicted'].values, (df['user'].values.astype(int) , df['item'].values.astype(int) )) )
+    sparse_vals = sparse.coo_matrix( (df['actual'].values, (df['user'].values.astype(int) , df['item'].values.astype(int)  )) )
+    
+    dense_preds = sparse_preds.toarray()
+    dense_vals = sparse_vals.toarray()
+    
+    return ndcg_score(y_true= dense_vals , y_score= dense_preds, k=k)
+
+        
+
 
 
 def eval_loss(model, loader, device, regression=False, test_dataset=None, show_progress=False):
