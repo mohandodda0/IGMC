@@ -201,8 +201,8 @@ def create_trainvaltest_split(dataset, seed=1234, testing=False, datasplit_path=
         data = np.array([post_rating_map[r] for r in class_values[train_labels]]) + 1.
     data = data.astype(np.float32)
 
-    print('---------', num_users, num_items, type(u_train_idx), u_train_idx.shape, u_train_idx, type(v_train_idx),v_train_idx.shape, v_train_idx, type(data),data.shape, data)
-    print(num_users, num_items, max(u_train_idx), max(v_train_idx))
+    # print('---------', num_users, num_items, type(u_train_idx), u_train_idx.shape, u_train_idx, type(v_train_idx),v_train_idx.shape, v_train_idx, type(data),data.shape, data)
+    # print(num_users, num_items, max(u_train_idx), max(v_train_idx))
 
     rating_mx_train = sp.csr_matrix((data, [u_train_idx, v_train_idx]), 
                                     shape=[num_users, num_items], dtype=np.float32)
@@ -680,8 +680,8 @@ def load_from_file(dataset, testing=False, rating_map=None, post_rating_map=None
         data = np.array([post_rating_map[r] for r in class_values[train_labels]]) + 1.
     data = data.astype(np.float32)
 
-    print(data, u_train_idx, v_train_idx, num_users, num_items)
-    print(num_users, num_items, max(u_train_idx), max(v_train_idx))
+    # print(data, u_train_idx, v_train_idx, num_users, num_items)
+    # print(num_users, num_items, max(u_train_idx), max(v_train_idx))
 
 
     rating_mx_train = sp.csr_matrix((data, [u_train_idx, v_train_idx]), 

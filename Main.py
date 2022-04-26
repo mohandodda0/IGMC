@@ -345,7 +345,7 @@ test_graphs = eval(dataset_class)(
     class_values, 
     max_num=args.max_test_num
 )
-print(test_graphs)
+# print(test_graphs)
 if not args.testing:
     dataset_class = 'MyDynamicDataset' if args.dynamic_val else 'MyDataset'
     val_graphs = eval(dataset_class)(
