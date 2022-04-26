@@ -234,7 +234,7 @@ def eval_recall(model, loader, device, test_dataset=None, show_progress=False):
     recalls = dict()
     for i, (uid, _, true_r, est) in df.iterrows():
         user_est_true[uid].append((est, true_r))
-    threshold = -2
+    threshold = 3.5
     for uid, user_ratings in user_est_true.items():
         user_ratings.sort(key=lambda x: x[0], reverse=True)
         n_rel = sum((true_r >= threshold) for (_, true_r) in user_ratings)
