@@ -29,10 +29,10 @@ warnings.showwarning = warn_with_traceback
 
 
 def logger(info, model, optimizer):
-    epoch, train_loss, test_score, evaluation_metric= info['epoch'], info['train_loss'], info['test_score'], info['evaluation_metric']
+    epoch, train_loss, test_rmse = info['epoch'], info['train_loss'], info['test_rmse']
     with open(os.path.join(args.res_dir, 'log.txt'), 'a') as f:
-        f.write('Epoch {}, train loss {:.4f}, test rmse {:.6f}, evaluation metric {}\n'.format(
-            epoch, train_loss, test_score, evaluation_metric))
+        f.write('Epoch {}, train loss {:.4f}, test rmse {:.6f}\n'.format(
+            epoch, train_loss, test_rmse))
     if type(epoch) == int and epoch % args.save_interval == 0:
         print('Saving model states...')
         model_name = os.path.join(args.res_dir, 'model_checkpoint{}.pth'.format(epoch))
