@@ -244,6 +244,7 @@ def subgraph_extraction_labeling(ind, Arow, Acol, h=1, sample_ratio=1.0, max_nod
     num_nodes = len(u_nodes) + len(v_nodes)
     node_labels = [x*2 for x in u_dist] + [x*2+1 for x in v_dist]
     max_node_label = 2*h + 1
+
     y = class_values[y]
     
     # get node features
