@@ -135,9 +135,9 @@ def test_once(test_dataset,
         #     score = eval_recall_ensemble(model, checkpoints, test_dataset, device, show_progress=True)
         # else:
         #     score = eval_recall(model, test_dataset, device, show_progress=True)
-        score = eval_recall(model, test_loader, device, test_dataset, test_graphs, show_progress=True)
+        score = eval_recall(model, test_loader, device, test_dataset, show_progress=True)
     elif evalmethod =='ndcg':
-        score = eval_ndcg(model, test_loader, device, test_dataset, test_graphs, show_progress=True)
+        score = eval_ndcg(model, test_loader, device, test_dataset, show_progress=True)
     t_end = time.perf_counter()
     duration = t_end - t_start
     print('Test Once evaluation: {:.6f}, Duration: {:.6f}'.format(score, duration))
@@ -199,57 +199,57 @@ def train(model, optimizer, loader, device, regression=False, ARR=0,
     return total_loss / len(loader.dataset)
 
 
-# def eval_recall(model, loader, device, test_dataset=None, show_progress=False):
-#     model.eval()
-#     if show_progress:
-#         print('Testing begins...')
-#         pbar = tqdm(loader)
-#     else:
-#         pbar = loader
+def eval_recall(model, loader, device, test_dataset=None, show_progress=False):
+    model.eval()
+    if show_progress:
+        print('Testing begins...')
+        pbar = tqdm(loader)
+    else:
+        pbar = loader
 
-#     ys = []
-#     outs  = []
-#     count = 0
-#     for data in pbar:
-#         data = data.to(device)
-#         ys.append(data.y.view(-1))
-#         out = model(data)
-#         outs.append(out)
+    ys = []
+    outs  = []
+    count = 0
+    for data in pbar:
+        data = data.to(device)
+        ys.append(data.y.view(-1))
+        out = model(data)
+        outs.append(out)
 
         
-#     ys = torch.cat(ys, 0)
-#     outs = torch.cat(outs, 0)
-#     ys = ys.cpu().detach().numpy()
-#     outs = outs.cpu().detach().numpy()
+    ys = torch.cat(ys, 0)
+    outs = torch.cat(outs, 0)
+    ys = ys.cpu().detach().numpy()
+    outs = outs.cpu().detach().numpy()
 
-#     # print(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).shape)
-#     df = pd.DataFrame(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).T,  columns=['user', 'item', 'actual', 'predicted'])
-#     from collections import defaultdict
-#     # top_n = defaultdict(list)
-#     # for i, (uid, iid, true_r, est, _) in df.iterrows():
-#     #     top_n[uid].append((iid, est))
-#     k = 20
-#     user_est_true = defaultdict(list)
-#     precisions = dict()
-#     recalls = dict()
-#     for i, (uid, _, true_r, est) in df.iterrows():
-#         user_est_true[uid].append((est, true_r))
-#     threshold = 3.5
-#     for uid, user_ratings in user_est_true.items():
-#         user_ratings.sort(key=lambda x: x[0], reverse=True)
-#         n_rel = sum((true_r >= threshold) for (_, true_r) in user_ratings)
+    # print(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).shape)
+    df = pd.DataFrame(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).T,  columns=['user', 'item', 'actual', 'predicted'])
+    from collections import defaultdict
+    # top_n = defaultdict(list)
+    # for i, (uid, iid, true_r, est, _) in df.iterrows():
+    #     top_n[uid].append((iid, est))
+    k = 20
+    user_est_true = defaultdict(list)
+    precisions = dict()
+    recalls = dict()
+    for i, (uid, _, true_r, est) in df.iterrows():
+        user_est_true[uid].append((est, true_r))
+    threshold = 3.5
+    for uid, user_ratings in user_est_true.items():
+        user_ratings.sort(key=lambda x: x[0], reverse=True)
+        n_rel = sum((true_r >= threshold) for (_, true_r) in user_ratings)
 
-#         n_rec_k = sum((est >= threshold) for (est, _) in user_ratings[:k])
+        n_rec_k = sum((est >= threshold) for (est, _) in user_ratings[:k])
 
-#         n_rel_and_rec_k = sum(((true_r >= threshold) and (est >= threshold))
-#                               for (est, true_r) in user_ratings[:k])
+        n_rel_and_rec_k = sum(((true_r >= threshold) and (est >= threshold))
+                              for (est, true_r) in user_ratings[:k])
         
 
-#         precisions[uid] = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 0
+        precisions[uid] = n_rel_and_rec_k / n_rec_k if n_rec_k != 0 else 0
 
-#         recalls[uid] = n_rel_and_rec_k / n_rel if n_rel != 0 else 0
-#     # print(recalls)
-#     return np.array(list(recalls.values())).mean()
+        recalls[uid] = n_rel_and_rec_k / n_rel if n_rel != 0 else 0
+    print(np.array(list(precisions.values())).mean())
+    return np.array(list(recalls.values())).mean()
 
 
 
@@ -297,69 +297,69 @@ def eval_ndcg(model, loader, device, test_dataset=None, show_progress=False):
 
 
  
-def eval_recall(model, loader, device, test_dataset=None, test_graphs=None, show_progress=False):
-    model.eval()
-    if show_progress:
-        print('Testing begins...')
-        pbar = tqdm(loader)
-    else:
-        pbar = loader
+# def eval_recall(model, loader, device, test_dataset=None, test_graphs=None, show_progress=False):
+#     model.eval()
+#     if show_progress:
+#         print('Testing begins...')
+#         pbar = tqdm(loader)
+#     else:
+#         pbar = loader
 
-    ys = []
-    outs  = []
-    count = 0
-    for data in pbar:
-        data = data.to(device)
-        ys.append(data.y.view(-1))
-        out = model(data)
-        outs.append(out)
-
-        
-    ys = torch.cat(ys, 0)
-    outs = torch.cat(outs, 0)
-    ys = ys.cpu().detach().numpy()
-    outs = outs.cpu().detach().numpy()
-
-    print(test_dataset.links[0].shape, test_dataset.links[1].shape, ys.shape, outs.shape)
-    df = pd.DataFrame(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).T,  columns=['user', 'item', 'actual', 'predicted'])
-    from collections import defaultdict
-    # top_n = defaultdict(list)
-    # for i, (uid, iid, true_r, est, _) in df.iterrows():
-    #     top_n[uid].append((iid, est))
-    k = 20
-    user_est_true = defaultdict(list)
-    precisions = dict()
-    recalls = dict()
-    for i, (uid, iid, _, est) in df.iterrows():
-        user_est_true[uid].append((est, iid))
-    threshold = 3.5
-
-    user_test_vals = defaultdict(set)
-    for i in range(len(test_graphs.links[0])):
-        uid = test_graphs.links[0][i]
-        iid = test_graphs.links[1][i]
-        user_test_vals[uid].add(iid)
-
-
-    for uid, iids in user_test_vals.items():
-        user_ratings = user_est_true[uid]
-        user_ratings.sort(key=lambda x: x[0], reverse=True)
-        items_user_ratings_topk = [item[1] for item in user_ratings[:k]]
-        total = items_user_ratings_topk[:k]
-        tp = set(total) & set(iids)
-        fp = set(total).symmetric_difference(iids)
-        fn = iids.symmetric_difference(set(total))
-
-
+#     ys = []
+#     outs  = []
+#     count = 0
+#     for data in pbar:
+#         data = data.to(device)
+#         ys.append(data.y.view(-1))
+#         out = model(data)
+#         outs.append(out)
 
         
+#     ys = torch.cat(ys, 0)
+#     outs = torch.cat(outs, 0)
+#     ys = ys.cpu().detach().numpy()
+#     outs = outs.cpu().detach().numpy()
 
-        precisions[uid] = tp / (tp+fp) if (tp+fp) != 0 else 0
+#     print(test_dataset.links[0].shape, test_dataset.links[1].shape, ys.shape, outs.shape)
+#     df = pd.DataFrame(np.array([test_dataset.links[0], test_dataset.links[1], ys, outs ]).T,  columns=['user', 'item', 'actual', 'predicted'])
+#     from collections import defaultdict
+#     # top_n = defaultdict(list)
+#     # for i, (uid, iid, true_r, est, _) in df.iterrows():
+#     #     top_n[uid].append((iid, est))
+#     k = 20
+#     user_est_true = defaultdict(list)
+#     precisions = dict()
+#     recalls = dict()
+#     for i, (uid, iid, _, est) in df.iterrows():
+#         user_est_true[uid].append((est, iid))
+#     threshold = 3.5
 
-        recalls[uid] = tp / (tp+fn)  if (tp+fn) != 0 else 0
+#     user_test_vals = defaultdict(set)
+#     for i in range(len(test_graphs.links[0])):
+#         uid = test_graphs.links[0][i]
+#         iid = test_graphs.links[1][i]
+#         user_test_vals[uid].add(iid)
 
-    print(precisions)
-    return np.array(list(recalls.values())).mean()       
+
+#     for uid, iids in user_test_vals.items():
+#         user_ratings = user_est_true[uid]
+#         user_ratings.sort(key=lambda x: x[0], reverse=True)
+#         items_user_ratings_topk = [item[1] for item in user_ratings[:k]]
+#         total = items_user_ratings_topk[:k]
+#         tp = set(total) & set(iids)
+#         fp = set(total).symmetric_difference(iids)
+#         fn = iids.symmetric_difference(set(total))
+
+
+
+        
+
+#         precisions[uid] = tp / (tp+fp) if (tp+fp) != 0 else 0
+
+#         recalls[uid] = tp / (tp+fn)  if (tp+fn) != 0 else 0
+
+#     print(precisions)
+#     return np.array(list(recalls.values())).mean()       
 
 
 

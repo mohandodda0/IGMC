@@ -161,8 +161,8 @@ def links2subgraphs(Arow,
     print('Enclosing subgraph extraction begins...')
     g_list = []
     if not parallel:
-        print(len(links[0]))
-        print(len(labels))
+        # print(len(links[0]))
+        # print(len(labels))
         with tqdm(total=len(links[0])) as pbar:
             for i, j, g_label in zip(links[0], links[1], labels):
                 tmp = subgraph_extraction_labeling(
