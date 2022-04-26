@@ -4,7 +4,7 @@ from models import *
 from train_eval import *
 
 
-data_name = 'ml_1m_stratified'
+data_name = 'goodreads_stratified'
 
 ratio = 0
 rating_map = None
