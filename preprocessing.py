@@ -651,14 +651,16 @@ def load_from_file(dataset, testing=False, rating_map=None, post_rating_map=None
     # train_labels = data_train['ratings'].values
     # test_labels = data_test['ratings'].values
 
+
+
+    num_train = len(data_train)
+    result = pd.concat([data_train, data_test])
+
     ratings = result['ratings'].values
     if rating_map is not None:
         for i, x in enumerate(ratings):
             ratings[i] = rating_map[x]
 
-
-    num_train = len(data_train)
-    result = pd.concat([data_train, data_test])
 
     u_nodes_ratings, _, num_users = map_data(result['u_nodes'].values)
     v_nodes_ratings, _, num_items = map_data(result['v_nodes'].values)
@@ -675,11 +677,11 @@ def load_from_file(dataset, testing=False, rating_map=None, post_rating_map=None
     rating_dict = {r: i for i, r in enumerate(np.sort(np.unique(ratings)).tolist())}
     all_labels = np.array([rating_dict[r] for r in ratings], dtype=np.int32)
     train_labels = all_labels[:num_train]
-    val_labels = all_labels[num_train:]
+    test_labels = all_labels[num_train:]
 
 
 
-    class_values = np.sort(np.unique(result['ratings']))
+    class_values = np.sort(np.unique(ratings))
 
     # make training adjacency matrix
     u_features = None
