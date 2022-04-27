@@ -4,7 +4,7 @@ from models import *
 from train_eval import *
 
 
-data_name = 'goodreads_stratified'
+data_name = 'goodreads_stratified2'
 
 ratio = 0
 rating_map = None
@@ -35,7 +35,7 @@ elif data_name == 'ml_100k':
     ) = load_official_trainvaltest_split(
         data_name, True, rating_map, post_rating_map, 1.0
     )
-elif data_name == "ml_1m_stratified" or  data_name == "goodreads_stratified":
+elif data_name == "ml_1m_stratified" or  data_name == "goodreads_stratified" or  data_name == "goodreads_stratified2":
     print("loading from file without features")
     (
         u_features, v_features, adj_train, train_labels, train_u_indices, train_v_indices,
@@ -171,7 +171,7 @@ train_indices = (train_u_indices, train_v_indices)
 
 test_indices = (test_u_indices, test_v_indices)
 
-print(max(train_u_indices), max(train_v_indices), max(test_u_indices), max(test_v_indices))
+# print(max(train_u_indices), max(train_v_indices), max(test_u_indices), max(test_v_indices))
 
 
 print('model loaded')
